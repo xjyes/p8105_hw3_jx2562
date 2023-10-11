@@ -1,0 +1,77 @@
+---
+title: "p8105_hx3_jx562"
+author: "Jingyi"
+date: "2023-10-11"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+## Problem 1
+
+This problem aims to explore `instacart` data.
+
+First, we loaded the data.
+
+```{r}
+library(p8105.datasets)
+data("instacart")
+```
+
+The data `instacart` has features as described below.
+
+*   The data has `r ncol(instacart)` observations and `r nrow(instacart)` variables.
+*   The data has variables named `r colnames(instacart)`.
+*   An example of the observations of the data is demonstrated below.
+
+```{r}
+head(instacart, 3)
+```
+
+Then, we need to answer a few questions regarding the dataset.
+
+1.    How many aisles are there, and which aisles are the most items ordered from?
+
+*   There are `r length(unique(instacart$aisle))` different aisles. 
+
+```{r}
+aisle_order = instacart |>
+  group_by(aisle) |>
+  summarize(order_number_aisle = sum(order_number)) |>
+  arrange(desc(order_number_aisle))
+```
+*   The aisle where most items are ordered from and the number of order are `r head(aisle_order, 1)`.
+
+2.    Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. 
+
+```{r}
+aisle_order_10000 = instacart |>
+  group_by(aisle_id) |>
+  summarize(order_number_aisle = sum(order_number)) |>
+  filter(order_number_aisle > 10000)
+
+ggplot(aisle_order_10000, aes(x = reorder(aisle_id, -order_number_aisle), y = order_number_aisle)) +
+  geom_bar(stat = "identity", fill = "steelblue",  width = 0.5) +
+  labs(x = "Aisle ID", y = "Total Order Count", title = "Total Orders by Aisle (Aisles with > 10,000 Orders)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, size = 4)) 
+```
+*   Given the aisle id, we can look up to the exact aisle name. There are `r nrow(aisle_order_10000)` out of `r nrow(aisle_order)` which has an order number larger than 10000. The aisles with top 5 total order number count are `r aisle_order$aisle[1:5]`
+
+3.    Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
