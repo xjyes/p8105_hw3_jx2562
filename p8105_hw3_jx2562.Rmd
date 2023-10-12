@@ -157,5 +157,119 @@ ggplot(state_value, aes(x = year, y = mean_value, color = state, group = state))
 
 *   The above plot gives the average data value from 2002 to 2010 across the states in the US, in which only the observations with `Excellent` responses were kept. 
 
+3.    *Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.*
+
+Filter the qualified data.
+```{r}
+ny_data = brfss_clean |>
+  filter(locationabbr == "NY") |>
+  filter(year %in% c(2006, 2010)) 
+  
+```
+
+Make the two-panel plot.
+
+```{r}
+ggplot(ny_data, aes(x = year, y = data_value, group = year)) +
+  geom_boxplot(fill = "steelblue", color = "black") +
+  facet_grid(. ~ response) +
+  labs(x = "Year", y = "Data Value", title = "Distribution of Data Value by Response (NY State)") +
+  theme_minimal()
+```
+
+*   The boxplot compares the distribution of `data_value` between 2006 and 2010 in terms of different `response` level in NY state. 
+
+
+## Problem 3
+
+This problem aims to observe the accelerometer data collected on 250 participants in the NHANES study. 
+
+First, we load the demographic and accelerometer data of the 250 participants, and tidy them accordingly. 
+
+```{r}
+acl_df = read_csv("data/nhanes_accel.csv",show_col_types = FALSE) 
+
+education_mapping <- c("Less than high school", "High school equivalent", "More than high school")
+sex_mapping <- c("male", "female")
+
+mims_df = read_csv("data/nhanes_covar.csv", skip = 4,show_col_types = FALSE) |>
+  filter(age >= 21) |>
+  na.omit()|>
+  merge(acl_df) |>
+  mutate(
+    education = factor(education_mapping[education], levels = education_mapping),
+    sex = factor(sex_mapping[sex], levels = sex_mapping)
+  )
+```
+
+Then, we produce a table about the number of men and women in each education category.
+
+```{r}
+sex_education = mims_df |>
+  group_by(education, sex) |>
+  summarize(count = n()) |>
+  pivot_wider(names_from = sex, values_from = count)
+
+knitr::kable(sex_education)
+```
+
+Visualize the age distribution in each category.
+
+```{r}
+ggplot(mims_df, aes(x = sex, y = age,fill = sex)) +
+  geom_boxplot() +
+  facet_grid(~education) +
+  labs(x = "Sex", y = "Age", title = "Age Distribution by Education and Sex") +
+  theme_minimal()
+```
+
+The boxplot shows the age distribution by education and sex. As we can see from the graph, the age distribution between male and female in "Less than high school" group and "More than high school" group are similar. The biggest difference between the distribution pattern appears in the "High school equivalent" group, with female generally has a older age.
+
+Let's focus on the total activity of each participants.
+
+```{r}
+total_activity_df <- mims_df |>
+  rowwise() |>
+  mutate(total_activity = sum(c_across(starts_with("min"))))
+```
+
+Plot the total activity against age, with men and women in different panel for each education level.
+
+```{r}
+ggplot(total_activity_df, aes(x = age, y = total_activity, color = sex)) +
+  geom_point() +             
+  geom_smooth( se = FALSE) +  
+  facet_wrap(~education) +    
+  labs(x = "Age", y = "Total Activity", title = "Total Activity vs. Age by Gender and Education Level") +
+  theme_minimal()
+```
+As we can see from the plot, in each education level, male and female show different trend. 
+
+*   For "Less than high school" group, both male and female show a peak in the total activity in around age 60; for "High school equivalent" group, the summit is around age 40; for "More than high school" group, male shows a peak at age 45 while female shows an insginificant peak at age 60.
+
+*   Generally, in the "Less than high school" group, male shows a higher total activity rate; in the other two groups, female shows a higher total activity rate. 
+
+Lastly, we focus on the 24-hour activity time courses for each education level and different sex. We make a plot accordingly. 
+
+```{r}
+activity_minute <- mims_df %>%
+  pivot_longer(cols = starts_with("min"), names_to = "minute", values_to = "activity_level") |>
+  mutate(minute = gsub("min", "", minute))
+
+ggplot(activity_minute, aes(x = as.numeric(minute), y = activity_level, color = sex)) +
+  geom_point(size = .3, alpha = .1) +
+  geom_smooth( se = FALSE) +
+  facet_wrap(~education, ncol = 1, scales = "free") +  
+  labs(x = "Minute of the Day", y = "Activity Level", title = "Activity Time Course by Education Level and Gender") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 60, size = 3))
+
+```
+
+The above plot shows the accelerometer value through out the day in different education levels and sex. In the smooth line, we can see no big differences between the distribution of the accelerometer value in the two sex. Also, the ups and downs appears in the similar minutes in the a day (up at the 500th minute and down at the 250th minute), and the general activity level is quite similar across different education level (under 25). 
+
+
+
+
 
 
