@@ -14,7 +14,7 @@ library(tidyverse)
 
 This problem aims to explore `instacart` data.
 
-First, we loaded the data.
+First, we loaded the data `instacart`.
 
 ```{r}
 library(p8105.datasets)
@@ -92,6 +92,70 @@ knitr::kable(product_hour)
 ```
 *   The table shows the mean hour of the day at which the two product are ordered in terms of each day of the week. 
 
+
+## Problem 2
+
+This problem aims to explore `BRFSS` data.
+
+First, we loaded the data `BRFSS`.
+
+```{r}
+library(p8105.datasets)
+data("brfss_smart2010")
+```
+
+Do some data cleaning regarding to the dataset.
+
+```{r}
+brfss_clean = brfss_smart2010 |>
+  janitor::clean_names() |>
+  filter(topic == "Overall Health") |>
+  filter(response %in% c("Poor","Fair","Good", "Very good","Excellent")) |>
+  mutate(response = factor(response, levels = c("Poor","Fair","Good", "Very good","Excellent"), ordered = T))
+```
+
+Then, we are going to answer some questions regarding to the data set.
+
+1.    *In 2002, which states were observed at 7 or more locations? What about in 2010?*
+
+```{r, warning=F}
+state_obs_2002 = brfss_clean |>
+  filter(year == 2002) |>
+  group_by(locationabbr, locationdesc) |>
+  summarise(locationdesc_count = n()) |>
+  group_by(locationabbr) |>
+  summarise(location_in_state = n())
+
+state_obs_2010 = brfss_clean |>
+  filter(year == 2010) |>
+  group_by(locationabbr, locationdesc) |>
+  summarise(locationdesc_count = n()) |>
+  group_by(locationabbr) |>
+  summarise(location_in_state = n())
+```
+
+*   The above datasets give the count number of different locations where a state was observed in 2002 or 2010. In 2002, `r state_obs_2002 |> filter(location_in_state >= 7) |> pull(locationabbr)` states were observed at 7 or more locations. In 2010, `r state_obs_2010 |> filter(location_in_state >= 7) |> pull(locationabbr)` states were observed at 7 or more locations.
+
+2.    *Construct a dataset that is limited to Excellent responses, and contains, year, state, and a variable that averages the data_value across locations within a state.*
+
+```{r}
+state_value = brfss_clean |>
+  filter(response == "Excellent") |>
+  group_by(year, locationabbr) |>
+  summarise(mean_value = mean(data_value)) |>
+  select(state = locationabbr, everything())
+```
+
+Make the "spaghetti" plot.
+
+```{r, warning=F}
+ggplot(state_value, aes(x = year, y = mean_value, color = state, group = state)) +
+  geom_line() +
+  labs(x = "Year", y = "Average Data Value", title = "Average Data Value by State (Excellent Responses)") +
+  theme_minimal()
+```
+
+*   The above plot gives the average data value from 2002 to 2010 across the states in the US, in which only the observations with `Excellent` responses were kept. 
 
 
 
